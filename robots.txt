@@ -1,4 +1,16 @@
+# PK IT Solutions — https://pkitsol.com
+# Search engines and AI answer engines (ChatGPT, Perplexity, Gemini, Claude) are welcome:
+# being crawlable is what lets them cite us (AEO / GEO).
 User-agent: *
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
 Allow: /
-Disallow: /service-template.html
+Disallow: /service-template
+Disallow: /offline
+Disallow: /tools/
+
 Sitemap: https://pkitsol.com/sitemap.xml

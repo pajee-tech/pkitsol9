@@ -1,4 +1,39 @@
-# PK IT Sol landing page
+# PK IT Solutions website (v2.0, November 2026 upgrade)
+
+Static HTML, CSS and vanilla JavaScript, pre-rendered (SSG) and deployed on Vercel.
+v2.0 adds a build step with deployment checks, security headers, PWA support and
+automated tests. **The pages still open straight from the folder** for editing.
+
+## What changed in v2.0 (quick map)
+
+| Area | Where |
+| --- | --- |
+| Home hero (lead bar, growth snapshot, service links) | `index.html` `.hero--pro`, CSS section "Home hero" |
+| Service hero dashboards (no more repeat of the mega-menu picture) | `.hx--seo`, `.hx--web`, `.hx--dm` in each service page |
+| Reviews: home carousel + a reviews section on every service page | `#reviews`, CSS section "Reviews" |
+| SEO head: OG/Twitter, canonical, JSON-LD graph, static FAQ schema | `<head>` of every page |
+| Security headers, CSP, caching, 301 redirects | `vercel.json` |
+| Build (minify, cache-busting, link/SEO checks) | `scripts/build.mjs` → `dist/` |
+| PWA (manifest, offline page, service worker) | `manifest.webmanifest`, `sw.js`, `offline.html` |
+| Monitoring and feature flags (Sentry, service worker, prerender) | `js/config.js` → `monitoring`, `features` |
+| Tests and CI | `tests/`, `playwright.config.js`, `lighthouserc.json`, `.github/workflows/` |
+
+## Commands
+
+```bash
+npm install          # once
+npm run dev          # source files on http://localhost:8080 (clean URLs like Vercel)
+npm run build        # build dist/ and run the deployment checks
+npm run serve        # preview dist/ on http://localhost:4173
+npx playwright install chromium && npm test   # functional tests (desktop, tablet, mobile)
+```
+
+Vercel runs `npm ci --omit=dev` and `npm run build` itself (see `vercel.json`).
+If a check fails, the deploy fails and the previous version stays live.
+
+---
+
+## Original notes (v1)
 
 A static, single-page marketing site: plain HTML, CSS and vanilla JavaScript.
 No build step, no dependencies, no framework.
@@ -342,9 +377,7 @@ is one block that starts with `<li class="carousel__slide">` and ends with
 
 The three names, roles and photos are already set (Hamza Ali, Ayesha Khan,
 Ali Raza). The photos are saved by `tools/download-images` into
-`assets/img/reviews/`; until then they load from the web. **The review text is
-not filled in**: each `<blockquote>` holds a yellow note. Paste the client's
-own words there, replacing the whole `<mark class="todo">...</mark>`.
+`assets/img/reviews/`; until then they load from the web. v2.0: the review cards are `<li class="rv">` blocks (home carousel and `#reviews` on each service page). Each has the quote, a verified result line and service tags. Use real client words only, with permission.
 
 | To change | Edit |
 | --- | --- |
@@ -372,8 +405,7 @@ full-page screenshot (`image: "assets/img/portfolio/site.png"`) scrolls too.
 
 ## Indexing and the home address
 
-- Only `index.html` is set to `index, follow`. Every other page is
-  `noindex, nofollow` until its content is final.
+- All public pages are `index, follow` and listed in `sitemap.xml`; `service-template.html` and `offline.html` are `noindex`.
 - The logo and every "Home" link point to `/` (the root of the domain), never
   to `index.html` or `#top`. If someone opens `/index.html`, the address bar
   is rewritten to `/`, and the canonical tag points to the root.

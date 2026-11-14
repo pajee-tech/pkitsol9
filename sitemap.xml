@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://pkitsol.com/</loc></url>
-  <url><loc>https://pkitsol.com/seo-services</loc></url>
-  <url><loc>https://pkitsol.com/web-development</loc></url>
-  <url><loc>https://pkitsol.com/digital-marketing</loc></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://pkitsol.com/</loc>
+    <lastmod>2026-11-14</lastmod>
+    <image:image><image:loc>https://pkitsol.com/assets/img/og-cover.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://pkitsol.com/seo-services</loc>
+    <lastmod>2026-11-14</lastmod>
+  </url>
+  <url>
+    <loc>https://pkitsol.com/web-development</loc>
+    <lastmod>2026-11-14</lastmod>
+  </url>
+  <url>
+    <loc>https://pkitsol.com/digital-marketing</loc>
+    <lastmod>2026-11-14</lastmod>
+  </url>
+  <url>
+    <loc>https://pkitsol.com/privacy-policy</loc>
+    <lastmod>2026-11-14</lastmod>
+  </url>
 </urlset>

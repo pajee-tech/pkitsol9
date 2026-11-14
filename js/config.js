@@ -12,7 +12,7 @@
  *  reads correctly for search engines and with JavaScript turned off.)
  */
 window.SITE_CONFIG = {
-  name: "PK IT SOLUTIONS",
+  name: "PK IT Solutions",
   tagline: "Your Digital Partner",
 
   phone: "+923006540558",          // used for tel: links and shown as text
@@ -61,6 +61,25 @@ window.SITE_CONFIG = {
        generate_lead   a form was sent successfully (Meta Pixel: "Lead")
        click_call, click_whatsapp, click_email   (Meta Pixel: "Contact")
        video_play, review_request_start          (the intro video and the review box) */
+  /* ------------------------------------------------------------------------
+     MONITORING + FEATURE FLAGS
+     ------------------------------------------------------------------------
+       sentryLoader  Sentry "Loader Script" URL from sentry.io -> Project -> Settings ->
+                     Client Keys (looks like https://js.sentry-cdn.com/abc123.min.js).
+                     Empty = Sentry is not loaded.
+       environment   optional, e.g. "staging". Default: production on pkitsol.com, else preview.
+     features (switch parts of the site on or off without touching code):
+       serviceWorker  offline page + faster repeat visits. Set false to remove it from browsers.
+       prerender      instant page loads on hover (Speculation Rules). */
+  monitoring: {
+    sentryLoader: "",
+    environment: ""
+  },
+  features: {
+    serviceWorker: true,
+    prerender: true
+  },
+
   analytics: {
     ga4: "",
     metaPixel: "",
@@ -101,7 +120,7 @@ window.SITE_CONFIG = {
             {
         title: "Khanabdosh Glamps",
         link: "https://khanabadosh.pk/",
-        image: "assets/img/portfolio/GSC - Khanabadosh.png",
+        image: "assets/img/portfolio/GSC - Khanabadosh.webp",
         remote: "https://techwiz-solution.vercel.app/Graph.png",
         rows: [
           { keyword: "Khanabadosh Glamps", rank: 1,  proof: "", url: "https://khanabadosh.pk/" },
@@ -119,7 +138,7 @@ window.SITE_CONFIG = {
       {
         title: "Rosa Clothing & Apparel Store",
         link: "https://rosastores.com/",
-        image: "assets/img/portfolio/GSC - Rosa Stores.png",
+        image: "assets/img/portfolio/GSC - Rosa Stores.webp",
         remote: "https://techwiz-solution.vercel.app/Graph.png",
         rows: [
           { keyword: "Rosa Boutique", rank: 1,  proof: "", url: "https://rosastores.com/" },
@@ -203,19 +222,19 @@ window.SITE_CONFIG = {
     marketing: [
       { title: "Origo Forlag AS (Norway)",       color: "#00AD5C", tilt: -8,
         text: "We successfully launched a Facebook video campaign that generated over 6K total views, driving an extraordinary 2.6K% increase in overall traffic and visibility.",
-        results: ["assets/img/portfolio/Origo Forlag As Performance.jpeg"], note: ""  },
+        results: ["assets/img/portfolio/Origo Forlag As Performance.webp"], note: ""  },
       { title: "Latitude Resorts (Pakistan)",        color: "#F6AF03", tilt: -6,
         text: "Our targeted Facebook video ads drove exceptional results, securing 1.9 million total views along with an impressive 82% increase in audience content interactions.",
-        results: ["assets/img/portfolio/Latitude Resorts Performance.jpeg"], note: "" },
+        results: ["assets/img/portfolio/Latitude Resorts Performance.webp"], note: "" },
       { title: "Baby Magasinet (Norway)", color: "#E22726", tilt: 3,
         text: "Through a high-performing Facebook video ad strategy, we delivered over 17K views and triggered an impressive 202.9% spike in audience engagement.",
-        results: ["assets/img/portfolio/Babymagasinet Performance.jpeg"], note: "" },
-        { title: "Infinity Resorts (Pakistan",      color: "#CF9E00", tilt: -4,
+        results: ["assets/img/portfolio/Babymagasinet Performance.webp"], note: "" },
+        { title: "Infinity Resorts (Pakistan)",      color: "#CF9E00", tilt: -4,
         text: "We optimized a dedicated Facebook video campaign that scaled platform visibility, yielding 1.6 million views and boosting total watch time by 555.7%.",
-        results: ["assets/img/portfolio/Infinity Resorts Performance.jpeg"], note: "" },
+        results: ["assets/img/portfolio/Infinity Resorts Performance.webp"], note: "" },
             { title: "Rosa Clothing & Apparel Store (Pakistan)",        color: "#212121", tilt: 7,
         text: "Our custom Facebook video ad setup catalyzed significant growth for the storefront, bringing in over 2.7 million views and driving a massive 66.8% increase in 3-second views.",
-        results: ["assets/img/portfolio/Rosa Stores Performance.jpeg"], note: "" }
+        results: ["assets/img/portfolio/Rosa Stores Performance.webp"], note: "" }
     ],
 
     /* Web Solutions tab. Add a website address and the page builds a laptop +
@@ -272,30 +291,37 @@ window.SITE_CONFIG = {
       items: [
         {
           title: "SEO Audit",
+          url: "/seo-services#seo-audit",
           image: "assets/img/menu/seo-seo-audit.svg"
         },
         {
           title: "Technical SEO",
+          url: "/seo-services#technical-seo",
           image: "assets/img/menu/seo-technical-seo.svg"
         },
         {
           title: "On-Page and Off-Page SEO",
+          url: "/seo-services#on-page-off-page",
           image: "assets/img/menu/seo-on-page-off-page.svg"
         },
         {
           title: "Local SEO",
+          url: "/seo-services#local-seo",
           image: "assets/img/menu/seo-local-seo.svg"
         },
         {
           title: "Ecommerce SEO",
+          url: "/seo-services#ecommerce-seo",
           image: "assets/img/menu/seo-ecommerce-seo.svg"
         },
         {
           title: "AEO and GEO",
+          url: "/seo-services#aeo-geo",
           image: "assets/img/menu/seo-aeo-geo.svg"
         },
         {
           title: "Link Building",
+          url: "/seo-services#link-building",
           image: "assets/img/menu/seo-link-building.svg"
         }
       ]
@@ -310,26 +336,32 @@ window.SITE_CONFIG = {
       items: [
         {
           title: "WordPress Websites",
+          url: "/web-development#wordpress",
           image: "assets/img/menu/web-wordpress.svg"
         },
         {
           title: "Ecommerce Stores",
+          url: "/web-development#ecommerce",
           image: "assets/img/menu/web-ecommerce.svg"
         },
         {
           title: "Shopify Stores",
+          url: "/web-development#shopify",
           image: "assets/img/menu/web-shopify.svg"
         },
         {
           title: "Custom Web Development",
+          url: "/web-development#custom-development",
           image: "assets/img/menu/web-custom-development.svg"
         },
         {
           title: "UI / UX Design",
+          url: "/web-development#ui-ux",
           image: "assets/img/menu/web-ui-ux.svg"
         },
         {
           title: "AI Chatbots and Automation",
+          url: "/web-development#ai-automation",
           image: "assets/img/menu/web-ai-automation.svg"
         }
       ]
@@ -344,34 +376,42 @@ window.SITE_CONFIG = {
       items: [
         {
           title: "Social Media Ads",
+          url: "/digital-marketing#social-media-ads",
           image: "assets/img/menu/marketing-social-media-ads.svg"
         },
         {
           title: "Google Ads and PPC",
+          url: "/digital-marketing#google-ads",
           image: "assets/img/menu/marketing-google-ads.svg"
         },
         {
           title: "Social Media Management",
+          url: "/digital-marketing#social-media-management",
           image: "assets/img/menu/marketing-social-media-management.svg"
         },
         {
           title: "Content Marketing",
+          url: "/digital-marketing#content-marketing",
           image: "assets/img/menu/marketing-content-marketing.svg"
         },
         {
           title: "Email Marketing",
+          url: "/digital-marketing#email-marketing",
           image: "assets/img/menu/marketing-email-marketing.svg"
         },
         {
           title: "Remarketing",
+          url: "/digital-marketing#remarketing",
           image: "assets/img/menu/marketing-remarketing.svg"
         },
         {
           title: "Influencer Marketing",
+          url: "/digital-marketing#influencer-marketing",
           image: "assets/img/menu/marketing-influencer-marketing.svg"
         },
         {
           title: "Video Marketing",
+          url: "/digital-marketing#video-marketing",
           image: "assets/img/menu/marketing-video-marketing.svg"
         }
       ]

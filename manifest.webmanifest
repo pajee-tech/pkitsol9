@@ -1,0 +1,20 @@
+{
+  "name": "PK IT Solutions — Web, SEO & Digital Marketing",
+  "short_name": "PK IT Solutions",
+  "description": "Web development, SEO and digital marketing agency in Islamabad, Pakistan, serving clients worldwide.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1c398e",
+  "lang": "en",
+  "icons": [
+    { "src": "/assets/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "SEO Services", "url": "/seo-services" },
+    { "name": "Web Development", "url": "/web-development" },
+    { "name": "Digital Marketing", "url": "/digital-marketing" }
+  ]
+}

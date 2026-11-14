@@ -1,0 +1,26 @@
+# Every 30 minutes: is the live site up, are the key pages and files served,
+# and do the internal links still work? A failed run emails the repo owner.
+name: Live site monitor
+on:
+  schedule: [{ cron: "*/30 * * * *" }]
+  workflow_dispatch:
+jobs:
+  uptime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Key URLs return 200
+        run: |
+          set -e
+          for p in / /seo-services /web-development /digital-marketing /privacy-policy /robots.txt /sitemap.xml /css/style.css /js/main.js; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -L "https://pkitsol.com$p")
+            echo "$code  $p"; test "$code" = "200"
+          done
+      - name: Security headers present
+        run: curl -sI https://pkitsol.com/ | grep -i -E "content-security-policy|strict-transport-security"
+  links:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *'
+    steps:
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --max-concurrency 4 --exclude "wa.me|linkedin.com|facebook.com|instagram.com" https://pkitsol.com/ https://pkitsol.com/seo-services https://pkitsol.com/web-development https://pkitsol.com/digital-marketing

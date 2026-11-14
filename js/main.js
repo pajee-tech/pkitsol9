@@ -489,6 +489,7 @@
 
   // Pages marked <div data-faq-schema> get FAQPage structured data built from the visible questions
   function initFaqSchema() {
+    if ($$('script[type="application/ld+json"]').some(function (t) { return /"FAQPage"/.test(t.textContent); })) return;
     $$("[data-faq-schema]").forEach(function (root) {
       var items = $$(".faq__item", root).map(function (item) {
         return {
@@ -612,6 +613,23 @@
     });
   }
 
+  /* Input hygiene: strip tags and control characters, cap the length. The email
+     service treats everything as plain text, so this is defence in depth. */
+  function clean(value, max) {
+    return String(value || "").replace(/<[^>]*>/g, "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max || 200);
+  }
+  var loadedAt = Date.now();
+  var SEND_KEY = "pkit_form_sends";
+  function recentSends() {
+    try {
+      var list = JSON.parse(localStorage.getItem(SEND_KEY) || "[]");
+      return list.filter(function (t) { return Date.now() - t < 10 * 60 * 1000; });
+    } catch (e) { return []; }
+  }
+  function rememberSend() {
+    try { var list = recentSends(); list.push(Date.now()); localStorage.setItem(SEND_KEY, JSON.stringify(list)); } catch (e) { /* storage blocked: skip */ }
+  }
+
   function initForms() {
     var params = new URLSearchParams(location.search);
 
@@ -623,7 +641,7 @@
       var f = form.elements;
 
       // Values passed in from another page or set in the markup
-      if (f.website && params.get("website")) f.website.value = params.get("website");
+      if (f.website && params.get("website")) f.website.value = clean(params.get("website"), 200);
       if (f.subject && form.getAttribute("data-subject") && !f.subject.value) f.subject.value = form.getAttribute("data-subject");
 
       function say(message, kind) {
@@ -651,18 +669,25 @@
 
       form.addEventListener("submit", function (e) {
         e.preventDefault();
-        if (f._honey && f._honey.value) return;                              // spam trap
+        if (f._honey && f._honey.value) return;                              // spam trap (hidden field bots fill in)
+        // Bot / abuse protection: humans need a few seconds to fill a form, and nobody sends 4 in 10 minutes
+        if (Date.now() - loadedAt < 2500) { say("Please take a moment to check your details, then send again.", "error"); return; }
+        var sent = recentSends();
+        if (sent.length >= 3) { say("You have sent several messages in the last few minutes. Please wait a little or WhatsApp us directly.", "error"); return; }
 
         var data = {};
         var fields = $$("input, select, textarea", form).filter(function (el) { return el.name && el.name.charAt(0) !== "_"; });
         for (var i = 0; i < fields.length; i++) {
           var field = fields[i];
-          var value = field.value.trim();
+          var value = clean(field.value, field.tagName === "TEXTAREA" ? 3000 : 200);
           if (field.required && !value) {
             return invalid(field, field.tagName === "SELECT" ? "Choose an option for " + fieldName(field) + "." : "Fill in " + fieldName(field) + ".");
           }
           if (field.type === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
             return invalid(field, "Enter a valid email address, like name@example.com.");
+          }
+          if (field.type === "tel" && value && !/^[+()\d\s-]{7,20}$/.test(value)) {
+            return invalid(field, "Enter a valid phone number, digits and + only.");
           }
           data[FIELD_LABELS[field.name] || field.name] = value;
         }
@@ -681,9 +706,10 @@
         say("");
         sendForm(formName, data).then(function () {
           track("generate_lead", { form_name: formName });
+          rememberSend();
           form.reset();
           if (f.subject && form.getAttribute("data-subject")) f.subject.value = form.getAttribute("data-subject");
-          say("Message sent successfully. We will reply to " + data.Email + " soon.", "success");
+          say(data.Email ? "Message sent successfully. We will reply to " + data.Email + " soon." : "Thank you! We received your request and will contact you within one working day.", "success");
         }).catch(function (error) {
           if (error.needsActivation) {
             say("One step left: this form needs a one-time activation. Open the inbox of " + (CFG.email || "the site email") + " and click the Activate link, then send again.", "error");
@@ -746,7 +772,7 @@
       });
 
       card.appendChild(media);
-      card.appendChild(el("h4", "", project.title));
+      card.appendChild(el("h3", "project__title", project.title));
       card.appendChild(button);
       slide.appendChild(card);
       track.appendChild(slide);
@@ -1108,15 +1134,16 @@
     function run(node) {
       var target = parseFloat(node.getAttribute("data-count")) || 0;
       var suffix = node.getAttribute("data-suffix") || "";
+      var decimals = parseInt(node.getAttribute("data-decimals"), 10) || 0;
       var start = null, duration = 1200;
       function frame(now) {
         if (start === null) start = now;
         var t = Math.min(1, (now - start) / duration);
         var eased = 1 - Math.pow(1 - t, 3);                     // fast at first, settling at the end
-        node.textContent = Math.round(target * eased) + (t === 1 ? suffix : "");
+        node.textContent = (target * eased).toFixed(decimals) + (t === 1 ? suffix : "");
         if (t < 1) window.requestAnimationFrame(frame);
       }
-      node.textContent = "0";
+      node.textContent = (0).toFixed(decimals);
       window.requestAnimationFrame(frame);
     }
     var watcher = new IntersectionObserver(function (entries) {
@@ -1127,8 +1154,55 @@
     numbers.forEach(function (node) { watcher.observe(node); });
   }
 
+  /* 13. LIVE VISUALS: run hero dashboards / marquees only while on screen ---- */
+  function initLiveVisuals() {
+    var nodes = $$("[data-hx]");
+    if (!nodes.length) return;
+    if (!("IntersectionObserver" in window)) { nodes.forEach(function (n) { n.classList.add("is-on"); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { entry.target.classList.toggle("is-on", entry.isIntersecting); });
+    }, { rootMargin: "80px 0px" });
+    nodes.forEach(function (n) { io.observe(n); });
+  }
+
+  /* 14. INSTANT NAVIGATION: prerender internal pages on hover (Speculation Rules API) */
+  function initSpeculation() {
+    if ((CFG.features && CFG.features.prerender === false) || location.protocol === "file:" || !HTMLScriptElement.supports || !HTMLScriptElement.supports("speculationrules")) return;
+    var rules = document.createElement("script");
+    rules.type = "speculationrules";
+    rules.textContent = JSON.stringify({
+      prerender: [{ where: { and: [{ href_matches: "/*" }, { not: { href_matches: "/*.(png|jpg|jpeg|svg|pdf|zip)" } }, { not: { selector_matches: "[target=_blank], [rel~=nofollow]" } }] }, eagerness: "moderate" }]
+    });
+    document.head.appendChild(rules);
+  }
+
+  /* 15. PWA: offline page + instant repeat visits (https only, never on localhost previews) */
+  function initServiceWorker() {
+    if (!("serviceWorker" in navigator) || location.protocol !== "https:") return;
+    if (CFG.features && CFG.features.serviceWorker === false) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) { regs.forEach(function (r) { r.unregister(); }); });
+      return;
+    }
+    window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });
+  }
+
+  /* 16. ERROR MONITORING (optional): Sentry loads only when a DSN is set in js/config.js -> monitoring */
+  function initMonitoring() {
+    var m = CFG.monitoring || {};
+    if (!m.sentryLoader || location.protocol === "file:") return;
+    var s = document.createElement("script");
+    s.src = m.sentryLoader; s.crossOrigin = "anonymous"; s.async = true;
+    s.onload = function () {
+      if (window.Sentry && window.Sentry.onLoad) window.Sentry.onLoad(function () {
+        window.Sentry.init({ environment: m.environment || (/^(www\.)?pkitsol\.com$/.test(location.hostname) ? "production" : "preview"), tracesSampleRate: 0.1 });
+      });
+    };
+    document.head.appendChild(s);
+  }
+
   /* BOOT -------------------------------------------------------------------- */
   function init() {
+    initMonitoring();
     initAnalytics();
     applyBrand();
     markCurrentPage();
@@ -1150,6 +1224,9 @@
     initQuoteDialog();
     initIntroVideo();
     initCounters();
+    initLiveVisuals();
+    initSpeculation();
+    initServiceWorker();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
