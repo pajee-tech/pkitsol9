@@ -24,7 +24,7 @@ jobs:
       - name: Build + deployment checks
         run: npm run build
       - name: Ready-to-upload zip (Actions run -> Artifacts)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with: { name: hostinger-upload, path: dist/, include-hidden-files: true, retention-days: 30 }
       - name: Upload to Hostinger (FTP)
         if: env.HAS_FTP == 'true'
