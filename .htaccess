@@ -1,0 +1,105 @@
+# =====================================================================
+# PK IT Solutions — Hostinger (Apache / LiteSpeed) configuration
+# Does the same job as vercel.json does on Vercel:
+# HTTPS, one domain version, clean URLs, 301 redirects, custom 404,
+# security headers, compression and browser caching.
+# Upload this file to public_html together with the website files.
+# =====================================================================
+
+Options -Indexes -MultiViews
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 1. Force HTTPS and the bare domain (https://pkitsol.com)
+  #    To keep www instead, swap the two rules marked "domain".
+  RewriteCond %{HTTPS} !=on [OR]
+  RewriteCond %{HTTP_HOST} ^www\. [NC]
+  RewriteCond %{HTTP_HOST} ^(?:www\.)?(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301,NE]
+
+  # 2. 301 redirects for common addresses (same list as vercel.json)
+  RewriteRule ^index/?$ / [L,R=301]
+  RewriteRule ^home/?$ / [L,R=301]
+  RewriteRule ^seo/?$ /seo-services [L,R=301]
+  RewriteRule ^seo-service/?$ /seo-services [L,R=301]
+  RewriteRule ^(web-design|website-development|web-solutions)/?$ /web-development [L,R=301]
+  RewriteRule ^marketing/?$ /digital-marketing [L,R=301]
+  RewriteRule ^social-media-marketing/?$ /digital-marketing#social-media-management [L,R=301,NE]
+  RewriteRule ^privacy/?$ /privacy-policy [L,R=301]
+  RewriteRule ^about/?$ /#about [L,R=301,NE]
+  RewriteRule ^(contact|contact-us)/?$ /#contact [L,R=301,NE]
+
+  # 3. Clean URLs: /seo-services.html -> /seo-services, /index.html -> /
+  RewriteCond %{THE_REQUEST} \s/+(.*?/)?index\.html[\s?] [NC]
+  RewriteRule ^ /%1 [L,R=301]
+  RewriteCond %{THE_REQUEST} \s/+([^?\s]+)\.html[\s?] [NC]
+  RewriteCond %1 !^404$
+  RewriteRule ^ /%1 [L,R=301]
+
+  # 4. Remove a trailing slash from page addresses: /seo-services/ -> /seo-services
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.+)/$ /$1 [L,R=301]
+
+  # 5. Serve /seo-services from seo-services.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+  RewriteRule ^([^.]+)$ /$1.html [L]
+</IfModule>
+
+# ---- Security headers ------------------------------------------------
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://js.sentry-cdn.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://formsubmit.co https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://*.sentry.io; frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://formsubmit.co; frame-ancestors 'self'; upgrade-insecure-requests"
+  Header unset X-Powered-By
+
+  # Pages that must not appear in Google
+  <FilesMatch "^(service-template|offline)\.html$">
+    Header set X-Robots-Tag "noindex, nofollow"
+  </FilesMatch>
+
+  # Caching: CSS/JS 1 day, then refreshed in the background. Safe even if a file is
+  # edited and uploaded by hand (the build also adds ?v=<hash> to their URLs).
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpe?g|webp|avif|svg|ico|gif|woff2?)$">
+    Header set Cache-Control "public, max-age=2592000, stale-while-revalidate=31536000"
+  </FilesMatch>
+  <FilesMatch "\.(html|xml|txt|webmanifest)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "^sw\.js$">
+    Header set Cache-Control "no-cache"
+    Header set Service-Worker-Allowed "/"
+  </FilesMatch>
+</IfModule>
+
+# ---- Correct file types ----------------------------------------------
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType image/avif .avif
+  AddType image/webp .webp
+  AddType image/svg+xml .svg
+</IfModule>
+
+# ---- Compression (Brotli first, Gzip fallback) -----------------------
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml application/javascript text/javascript application/json application/xml application/manifest+json image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/javascript text/javascript application/json application/xml application/manifest+json image/svg+xml
+</IfModule>
+
+# ---- Block access to dev files if they are ever uploaded -------------
+<FilesMatch "^(package(-lock)?\.json|vercel\.json|playwright\.config\.js|lighthouserc\.json|README\.md|\.env.*|\.git.*)$">
+  Require all denied
+</FilesMatch>

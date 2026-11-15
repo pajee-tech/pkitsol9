@@ -375,7 +375,7 @@ is one block that starts with `<li class="carousel__slide">` and ends with
 </figure></li>
 ```
 
-The three names, roles and photos are already set (Hamza Ali, Ayesha Khan,
+The three names, roles and photos are already set (Hamza Ali, Mohammad Adeel,
 Ali Raza). The photos are saved by `tools/download-images` into
 `assets/img/reviews/`; until then they load from the web. v2.0: the review cards are `<li class="rv">` blocks (home carousel and `#reviews` on each service page). Each has the quote, a verified result line and service tags. Use real client words only, with permission.
 

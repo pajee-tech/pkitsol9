@@ -1071,7 +1071,7 @@
         form.elements.subject.value = "Free website review";
         form.elements.message.value = (website ? "Website: " + website + "\n" : "") + "Please review my website and tell me where the biggest opportunities are.\n";
         var target = $("#contact");
-        if (target) target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        scrollToTarget(target);
         window.setTimeout(function () { form.elements.name.focus({ preventScroll: true }); }, reduceMotion ? 0 : 700);
         track("review_request_start", {});
       });
@@ -1200,9 +1200,66 @@
     document.head.appendChild(s);
   }
 
+  /* SMOOTH SCROLL TO A SECTION ------------------------------------------------
+     Every in-page CTA ("Get a Quote Now", "Get a Free Proposal", the mobile bar,
+     /#contact from other pages) goes through here. It measures the real sticky
+     header, scrolls, then re-checks twice in case images or animations above the
+     target changed the layout while scrolling, so the section always lands just
+     under the header. */
+  function headerOffset() {
+    var header = $(".site-header");
+    var h = header ? header.getBoundingClientRect().height : 0;
+    return Math.round(h + 12);
+  }
+  function scrollToTarget(target, opts) {
+    if (!target) return;
+    opts = opts || {};
+    var smooth = !reduceMotion && opts.smooth !== false;
+    function y() { return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - headerOffset()); }
+    window.scrollTo({ top: y(), behavior: smooth ? "smooth" : "instant" });
+    [450, 1000, 1600].forEach(function (ms) {
+      window.setTimeout(function () {
+        if (Math.abs(target.getBoundingClientRect().top - headerOffset()) > 6) window.scrollTo({ top: y(), behavior: "instant" });
+      }, smooth ? ms : ms / 3);
+    });
+  }
+  function samePageTarget(link) {
+    var href = link.getAttribute("href") || "";
+    if (href.indexOf("#") === -1 || href === "#" || href === "#quote" || href.indexOf("#i-") !== -1) return null;
+    var url;
+    try { url = new URL(href, location.href); } catch (e) { return null; }
+    var here = location.pathname.replace(/(index)?(\.html)?$/, "").replace(/\/$/, "");
+    var there = url.pathname.replace(/(index)?(\.html)?$/, "").replace(/\/$/, "");
+    if (url.origin !== location.origin || here !== there || !url.hash || url.hash === "#quote") return null;
+    try { return document.getElementById(decodeURIComponent(url.hash.slice(1))); } catch (e) { return null; }
+  }
+  function initAnchorScroll() {
+    document.addEventListener("click", function (e) {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      var link = e.target.closest("a[href*='#']");
+      if (!link || link.hasAttribute("data-quote-open") || link.closest("[role=tablist]")) return;
+      var target = samePageTarget(link);
+      if (!target) return;
+      e.preventDefault();
+      if (history.pushState) history.pushState(null, "", "#" + target.id);
+      scrollToTarget(target);
+    });
+    // Arriving from another page with a hash, e.g. /#contact from a service page
+    if (location.hash && location.hash !== "#quote") {
+      var t = null;
+      try { t = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) {}
+      if (t) {
+        if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+        window.addEventListener("load", function () { scrollToTarget(t, { smooth: false }); });
+        window.setTimeout(function () { scrollToTarget(t, { smooth: false }); }, 60);
+      }
+    }
+  }
+
   /* BOOT -------------------------------------------------------------------- */
   function init() {
     initMonitoring();
+    initAnchorScroll();
     initAnalytics();
     applyBrand();
     markCurrentPage();

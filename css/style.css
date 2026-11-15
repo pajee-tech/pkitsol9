@@ -1733,7 +1733,7 @@ mark.todo { padding: 0 .3em; border-radius: .25em; background: #fef08a; color: #
 
 /* Cross-page view transitions + smooth paint of off-screen sections */
 @view-transition { navigation: auto; }
-.section, .testimonials, .reviews, .more, .faq, .industries, .about, .portfolio { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+/* content-visibility removed: its estimated section heights made CTA anchor scrolls land in the wrong place */
 
 /* ---- Shared hero dashboard ("hx") ---- */
 .hx { position: relative; width: 100%; max-width: 31rem; margin: 0 auto; font-size: .8125rem; line-height: 1.35; color: var(--gray-700); text-align: left; }

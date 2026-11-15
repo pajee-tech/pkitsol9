@@ -1,0 +1,46 @@
+# Builds the site and uploads it to Hostinger by FTP on every push to main.
+# One-time setup (GitHub repo -> Settings -> Secrets and variables -> Actions):
+#   FTP_SERVER    e.g. ftp.pkitsol.com  (or the IP shown in hPanel -> Files -> FTP Accounts)
+#   FTP_USERNAME  e.g. u123456789.pkitsol.com
+#   FTP_PASSWORD  your FTP password
+# Optional: FTP_DIR (default ./public_html/), FTP_PROTOCOL (default ftps; use ftp if the upload cannot connect)
+# Until these secrets exist the job only builds and offers the ready zip for manual upload.
+name: Deploy to Hostinger
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+concurrency: { group: hostinger-deploy, cancel-in-progress: false }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HAS_FTP: ${{ secrets.FTP_SERVER != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci --omit=dev
+      - name: Build + deployment checks
+        run: npm run build
+      - name: Ready-to-upload zip (Actions run -> Artifacts)
+        uses: actions/upload-artifact@v4
+        with: { name: hostinger-upload, path: dist/, include-hidden-files: true, retention-days: 30 }
+      - name: Upload to Hostinger (FTP)
+        if: env.HAS_FTP == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ secrets.FTP_PROTOCOL || 'ftps' }}
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_DIR || './public_html/' }}
+          dangerous-clean-slate: false
+      - name: Smoke test the live site
+        if: env.HAS_FTP == 'true'
+        run: |
+          sleep 20
+          for p in / /seo-services /web-development /digital-marketing /sitemap.xml; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -L "https://pkitsol.com$p"); echo "$code $p"; test "$code" = "200"
+          done

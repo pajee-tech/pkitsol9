@@ -247,7 +247,7 @@ window.SITE_CONFIG = {
          phone        set to false to hide the phone mockup */
     web: [
       { url: "https://origoforlag.no/",           title: "Origo Forlag AS" },
-      { url: "https://khanabadosh.pk/",      title: "Khanabadosh Glamps" },
+      { url: "https://apex.no/",             title: "Apex Sportsernæring" },
       { url: "https://rosastores.pk/",       title: "Rosa Lifestyle Hub" },
       { url: "https://babymagasinetas.no/",             title: "Baby Magasinet" }
     ]

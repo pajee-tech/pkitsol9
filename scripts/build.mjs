@@ -46,7 +46,7 @@ const exists = async (p) => { try { await stat(p); return true; } catch { return
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 for (const entry of await readdir(ROOT)) {
-  if (EXCLUDE.has(entry) || entry.startsWith(".")) continue;
+  if (EXCLUDE.has(entry) || (entry.startsWith(".") && entry !== ".htaccess")) continue;
   await cp(join(ROOT, entry), join(OUT, entry), { recursive: true });
 }
 
@@ -64,6 +64,23 @@ for (const file of ["css/style.css", "js/config.js", "js/main.js"]) {
 const buildId = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 10) || hash(Object.values(versions).join("") + Date.now());
 const today = new Date().toISOString().slice(0, 10);
 
+// 3b. FAQ schema is rebuilt from the visible FAQ text on every build, so editing a
+//     question or answer in the page is enough: Google always gets matching data.
+const ENT = { amp: "&", nbsp: " ", mdash: "\u2014", ndash: "\u2013", rarr: "\u2192", middot: "\u00b7", quot: '"', "#39": "'", apos: "'", lt: "<", gt: ">", hellip: "\u2026", rsquo: "\u2019", lsquo: "\u2018", ldquo: "\u201c", rdquo: "\u201d" };
+const plain = (h) => h.replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<[^>]+>/g, " ")
+  .replace(/&(#\d+|#x[0-9a-f]+|\w+);/gi, (m, e) => ENT[e] ?? (e[0] === "#" ? String.fromCodePoint(e[1] === "x" ? parseInt(e.slice(2), 16) : +e.slice(1)) : m))
+  .replace(/\s+/g, " ").trim();
+function faqFrom(html) {
+  const items = [];
+  const parts = html.split(/<div class="faq__item"/).slice(1);
+  for (const part of parts) {
+    const q = part.match(/class="faq__q"[^>]*>([\s\S]*?)<\/button>/);
+    const a = part.match(/class="faq__a"[^>]*>([\s\S]*?)(?=<div class="faq__item"|<\/section>|$)/);
+    if (q && a) items.push({ "@type": "Question", name: plain(q[1]), acceptedAnswer: { "@type": "Answer", text: plain(a[1]) } });
+  }
+  return items;
+}
+
 // 4. HTML: version asset URLs, drop comments
 const htmlFiles = (await readdir(OUT)).filter((f) => f.endsWith(".html"));
 for (const f of htmlFiles) {
@@ -71,6 +88,16 @@ for (const f of htmlFiles) {
   for (const [file, v] of Object.entries(versions)) {
     const re = new RegExp(`(href|src)="(/?)${file.replace(".", "\\.")}"`, "g");
     html = html.replace(re, `$1="$2${file}?v=${v}"`);
+  }
+  const faq = faqFrom(html);
+  if (faq.length) {
+    html = html.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g, (m, body) => {
+      let data; try { data = JSON.parse(body); } catch { return m; }
+      const nodes = data["@graph"] || [data];
+      let hit = false;
+      for (const n of nodes) if (n["@type"] === "FAQPage") { n.mainEntity = faq; hit = true; }
+      return hit ? `<script type="application/ld+json">${JSON.stringify(data)}</script>` : m;
+    });
   }
   html = html.replace(/<!--(?!\[if)[\s\S]*?-->/g, "").replace(/\n\s*\n+/g, "\n");
   await writeFile(join(OUT, f), html);

@@ -1,26 +1,60 @@
-# Every 30 minutes: is the live site up, are the key pages and files served,
-# and do the internal links still work? A failed run emails the repo owner.
+# Live site monitor
+#  - every 30 minutes: valid pages answer 200 OK (directly, no redirect), invalid
+#    URLs answer a strict 404 (never the home page), .html addresses 301/308 to the
+#    clean URL, security headers are present
+#  - daily at 03:00 UTC (or on "Run workflow"): broken-link check
+# Which site is checked: repo Settings -> Secrets and variables -> Actions ->
+# Variables -> SITE_URL (e.g. https://pkitsol.com once the domain points to the host).
+# Without that variable it checks the Vercel address.
 name: Live site monitor
 on:
-  schedule: [{ cron: "*/30 * * * *" }]
+  schedule:
+    - cron: "*/30 * * * *"
+    - cron: "0 3 * * *"
   workflow_dispatch:
+env:
+  SITE_URL: ${{ vars.SITE_URL || 'https://pkitsol99.vercel.app' }}
 jobs:
   uptime:
     runs-on: ubuntu-latest
     steps:
-      - name: Key URLs return 200
+      - name: Valid URLs return 200 OK
         run: |
-          set -e
-          for p in / /seo-services /web-development /digital-marketing /privacy-policy /robots.txt /sitemap.xml /css/style.css /js/main.js; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" -L "https://pkitsol.com$p")
-            echo "$code  $p"; test "$code" = "200"
+          fail=0
+          for p in / /seo-services /web-development /digital-marketing /privacy-policy /robots.txt /sitemap.xml /manifest.webmanifest /css/style.css /js/main.js; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$SITE_URL$p")
+            echo "$code  $SITE_URL$p"
+            [ "$code" = "200" ] || fail=1
+          done
+          exit $fail
+      - name: Invalid URLs return a strict 404 (no catch-all to the home page)
+        run: |
+          fail=0
+          for p in /this-page-does-not-exist /abc123xyz /12345 /seo-services/random-sub-page /index.php /wp-admin; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$SITE_URL$p")
+            echo "$code  $SITE_URL$p"
+            [ "$code" = "404" ] || fail=1
+          done
+          exit $fail
+      - name: .html addresses redirect to the clean URL
+        run: |
+          for p in seo-services web-development digital-marketing; do
+            out=$(curl -s -o /dev/null -w "%{http_code} %{redirect_url}" --max-time 20 "$SITE_URL/$p.html")
+            echo "$out  <- /$p.html"
+            case "$out" in 30[178]\ *"/$p") ;; *) exit 1 ;; esac
           done
       - name: Security headers present
-        run: curl -sI https://pkitsol.com/ | grep -i -E "content-security-policy|strict-transport-security"
+        run: |
+          h=$(curl -sI --max-time 20 "$SITE_URL/")
+          echo "$h" | grep -i "content-security-policy" && echo "$h" | grep -i "strict-transport-security"
   links:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *'
     steps:
       - uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --max-concurrency 4 --exclude "wa.me|linkedin.com|facebook.com|instagram.com" https://pkitsol.com/ https://pkitsol.com/seo-services https://pkitsol.com/web-development https://pkitsol.com/digital-marketing
+          fail: true
+          args: >-
+            --no-progress --max-concurrency 4
+            --exclude "wa.me|linkedin.com|facebook.com|instagram.com|formsubmit.co|s.wordpress.com"
+            ${{ env.SITE_URL }}/ ${{ env.SITE_URL }}/seo-services ${{ env.SITE_URL }}/web-development ${{ env.SITE_URL }}/digital-marketing
